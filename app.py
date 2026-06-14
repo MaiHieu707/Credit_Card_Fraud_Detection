@@ -47,7 +47,7 @@ uploaded_file = st.file_uploader(
 # ==============================================================================
 # 4. KHU VỰC ĐIỀU CHỈNH NGƯỠNG (THRESHOLD)
 # ==============================================================================
-st.markdown("---") # Đường kẻ ngang phân cách
+st.markdown("---")
 st.subheader("⚙️ Cấu hình bộ lọc rủi ro")
 
 # Thanh trượt độ nhạy được đưa ra màn hình chính
@@ -58,7 +58,7 @@ threshold = st.slider(
     value=0.50,
     step=0.01,
 )
-st.markdown("---") # Đường kẻ ngang phân cách
+st.markdown("---")
 
 # ==============================================================================
 # 5. XỬ LÝ DỮ LIỆU & HIỂN THỊ KẾT QUẢ
@@ -93,7 +93,6 @@ if uploaded_file is not None:
         # ----------------------------------------------------------------------
         # CHẠY MÔ HÌNH DỰ ĐOÁN
         # ----------------------------------------------------------------------
-        # Dự đoán xác suất (Probability) để kết hợp với thanh trượt Threshold
         if hasattr(model, "predict_proba"):
             probabilities = model.predict_proba(X)[:, 1]
             predictions = (probabilities >= threshold).astype(int)
@@ -126,32 +125,61 @@ if uploaded_file is not None:
         with col4:
             st.metric(label="Tỷ lệ gian lận dự đoán", value=f"{fraud_percentage:.4f}%")
 
-        # Danh sách giao dịch bị phát hiện
-        st.subheader("🚨 Danh Sách Giao Dịch Nghi Ngờ Gian Lận")
+        # Tách các tập dữ liệu phục vụ hiển thị và tải xuống
         fraud_df = results_df[results_df["Prediction"] == 1]
+        normal_df = results_df[results_df["Prediction"] == 0]
 
+        # Sắp xếp các ca gian lận từ mức độ rủi ro cao nhất xuống thấp nhất để tiện rà soát
+        if len(fraud_df) > 0 and "Fraud_Probability" in fraud_df.columns:
+            fraud_df = fraud_df.sort_values(by="Fraud_Probability", ascending=False)
+
+        # Danh sách giao dịch bị phát hiện (Hiển thị toàn bộ danh sách)
+        st.subheader("🚨 Danh Sách Giao Dịch Nghi Ngờ Gian Lận")
         if len(fraud_df) > 0:
-            # Sắp xếp các ca gian lận từ mức độ rủi ro cao nhất xuống thấp nhất
-            if "Fraud_Probability" in fraud_df.columns:
-                fraud_df = fraud_df.sort_values(by="Fraud_Probability", ascending=False)
-            
             st.write(f"⚠️ Phát hiện **{len(fraud_df):,}** giao dịch vượt ngưỡng rủi ro `{threshold}`:")
-            st.dataframe(fraud_df.head(100)) # Chỉ in tối đa 100 dòng để web không bị đơ
+            st.dataframe(fraud_df) 
         else:
             st.success("✅ Tuyệt vời! Không phát hiện giao dịch gian lận nào.")
 
-        # Nút xem toàn bộ
-        with st.expander("👁️ Xem chi tiết bảng kết quả đầy đủ"):
-            st.dataframe(results_df.head(100))
-
-        # Nút xuất file CSV để báo cáo
-        csv_data = results_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="📥 Tải xuống báo cáo dự đoán (.csv)",
-            data=csv_data,
-            file_name="fraud_predictions_report.csv",
-            mime="text/csv"
-        )
+        # ==============================================================================
+        # KHU VỰC TẢI XUỐNG DỮ LIỆU (DOWNLOAD OPTIONS)
+        # ==============================================================================
+        st.markdown("---")
+        st.subheader("📥 Xuất Báo Cáo Dữ Liệu")
+        
+        # Chia làm 3 cột bằng nhau cho 3 nút bấm tải file
+        dl_col1, dl_col2, dl_col3 = st.columns(3)
+        
+        with dl_col1:
+            csv_all = results_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="📥 Tải xuống Bản Đầy Đủ (Tất cả giao dịch)",
+                data=csv_all,
+                file_name="all_transactions_report.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+            
+        with dl_col2:
+            csv_fraud = fraud_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="🚨 Tải xuống Danh Sách Gian Lận",
+                data=csv_fraud,
+                file_name="fraud_transactions_only.csv",
+                mime="text/csv",
+                use_container_width=True,
+                disabled=(len(fraud_df) == 0) # Vô hiệu hóa nút nếu không có ca gian lận nào
+            )
+            
+        with dl_col3:
+            csv_normal = normal_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="✅ Tải xuống Danh Sách Bình Thường",
+                data=csv_normal,
+                file_name="normal_transactions_only.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
 
     except Exception as e:
         st.error(f"❌ Đã xảy ra lỗi hệ thống khi xử lý: {e}")
