@@ -35,29 +35,34 @@ def load_assets():
 model, scaler = load_assets()
 
 # ==============================================================================
-# 3. GIAO DIỆN VÀ THANH ĐIỀU KHIỂN (SIDEBAR)
+# 3. GIAO DIỆN CHÍNH & UPLOAD FILE
 # ==============================================================================
 st.title("💳 Hệ Thống Phát Hiện Gian Lận Thẻ Tín Dụng")
 
-st.sidebar.header("⚙️ Cấu hình bộ lọc rủi ro")
+uploaded_file = st.file_uploader(
+    "Tải lên tập tin .csv chứa dữ liệu giao dịch cần kiểm tra",
+    type=["csv"]
+)
 
-# Thanh trượt độ nhạy
-threshold = st.sidebar.slider(
+# ==============================================================================
+# 4. KHU VỰC ĐIỀU CHỈNH NGƯỠNG (THRESHOLD)
+# ==============================================================================
+st.markdown("---") # Đường kẻ ngang phân cách
+st.subheader("⚙️ Cấu hình bộ lọc rủi ro")
+
+# Thanh trượt độ nhạy được đưa ra màn hình chính
+threshold = st.slider(
     "Ngưỡng quyết định gian lận (Threshold)",
     min_value=0.01,
     max_value=0.99,
     value=0.50,
     step=0.01,
 )
+st.markdown("---") # Đường kẻ ngang phân cách
 
 # ==============================================================================
-# 4. XỬ LÝ TẬP TIN DỮ LIỆU TẢI LÊN
+# 5. XỬ LÝ DỮ LIỆU & HIỂN THỊ KẾT QUẢ
 # ==============================================================================
-uploaded_file = st.file_uploader(
-    "Tải lên tập tin .csv chứa dữ liệu giao dịch cần kiểm tra",
-    type=["csv"]
-)
-
 if uploaded_file is not None:
     try:
         # Đọc dữ liệu đầu vào
@@ -69,7 +74,7 @@ if uploaded_file is not None:
         X = df[feature_cols]
         
         # ----------------------------------------------------------------------
-        # BƯỚC QUAN TRỌNG: CHUẨN HÓA (SCALE) DỮ LIỆU
+        # CHUẨN HÓA (SCALE) DỮ LIỆU
         # ----------------------------------------------------------------------
         try:
             # Kiểm tra xem scaler từ Notebook được huấn luyện trên những cột nào
@@ -96,7 +101,7 @@ if uploaded_file is not None:
         else:
             predictions = model.predict(X)
             results_df["Fraud_Probability"] = predictions.astype(float)
-            st.sidebar.warning("⚠️ Mô hình hiện tại không hỗ trợ xác suất. Ngưỡng điều chỉnh tạm vô hiệu.")
+            st.warning("⚠️ Mô hình hiện tại không hỗ trợ xác suất. Ngưỡng điều chỉnh tạm vô hiệu.")
 
         results_df["Prediction"] = predictions
 
@@ -107,7 +112,7 @@ if uploaded_file is not None:
         fraud_percentage = (fraud_count / total_transactions) * 100
 
         # ==============================================================================
-        # 5. HIỂN THỊ KẾT QUẢ LÊN DASHBOARD
+        # HIỂN THỊ KẾT QUẢ LÊN DASHBOARD
         # ==============================================================================
         st.subheader("📊 Thống Kê Dự Đoán (Prediction Summary)")
 
