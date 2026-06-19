@@ -135,9 +135,9 @@ if uploaded_file is not None:
             search_query = st.text_input("🔍 Tìm kiếm theo ID:", placeholder="Nhập ID giao dịch...")
 
         # Áp dụng bộ lọc Radio Button
-        if view_mode == "🚨 Chỉ giao dịch gian lận":
+        if view_mode == "🚨 Giao dịch gian lận":
             display_df = fraud_df.copy()
-        elif view_mode == "✅ Chỉ giao dịch bình thường":
+        elif view_mode == "✅ Giao dịch bình thường":
             display_df = normal_df.copy()
         else:
             display_df = results_df.copy()
